@@ -1,0 +1,36 @@
+version: 0.0
+os: linux
+
+files:
+   - source: tomcat-users.xml
+     destination: /root/
+   - source: tomcat.service
+     destination: /root/
+   - source: webserver_install_options.txt
+     destination: /root/
+permissions:
+   - object: /root/
+     pattern: "*"
+     mode: 777
+     type:
+       - file
+hooks:
+  AfterInstall:
+   - location: scripts/webserver_configure_system.sh
+     timeout: 300
+     runas: root
+   - location: scripts/webserver_install_libraries.sh
+     timeout: 300
+     runas: root
+   - location: scripts/webserver_install_tomcat.sh
+     timeout: 300
+     runas: root
+   - location: scripts/MicroStrategy.sh
+     runas: root
+   - location: scripts/MicroStrategyHotFix.sh
+     runas: root
+   - location: scripts/deploy_WAR_files.sh
+     runas: root
+   - location: scripts/iptables.sh
+     timeout: 300
+     runas: root

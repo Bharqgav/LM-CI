@@ -1,0 +1,27 @@
+version: 0.0
+os: linux
+
+files:
+   - source: iserver_install_options.txt
+     destination: /root/
+permissions:
+   - object: /root/
+     pattern: "*"
+     mode: 777
+     type:
+       - file
+hooks:
+  AfterInstall:
+   - location: scripts/iserver_configure_system.sh
+     timeout: 300
+     runas: root
+   - location: scripts/iserver_install_libraries.sh
+     timeout: 300
+     runas: root
+   - location: scripts/MicroStrategy.sh
+     runas: root
+   - location: scripts/MicroStrategyHotFix.sh
+     runas: root
+   - location: scripts/cert.sh
+     timeout: 300
+     runas: root
