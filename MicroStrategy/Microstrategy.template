@@ -1,0 +1,212 @@
+{
+	"AWSTemplateFormatVersion" : "2010-09-09",
+	"Description" : "This template Launches 1 sample linux Ec2 instance",
+	"Parameters" : {
+		"KeyPairName" : {
+			"Description" : "Enter key pair name to connect to the instance",
+			"Type" : "String",
+			"Default" : "KTLM"
+		},
+		"AmiId" : {
+			"Description" : "Amazon AMI",
+			"Type" : "String",
+			"Default" : "ami-c998b6b2"
+		},
+		"InstanceType" : {
+			"Description" : "Amazon EC2 instance type for the 1st HWNode",
+			"Type" : "String",
+			"Default" : "m4.large"
+		},
+		"SSLcert" : {
+			"Description" : "SSL certificate",
+			"Type" : "String",
+			"Default" : "arn:aws:acm:us-east-1:130159455024:certificate/0b6e6063-d9cd-438a-89fe-60278c19e318"
+		}
+	},
+	"Resources" : {
+	    "S3FullAccessInstanceProfile": {
+         "Type": "AWS::IAM::InstanceProfile",
+         "Properties": {
+            "Path": "/",
+            "Roles": [ {
+               "Ref": "S3FullAccessRole"
+            } ]
+         }
+      },
+		
+		"Webserver" : {
+			"Type" : "AWS::EC2::Instance",
+			"Properties" : {
+				 "ImageId" : {"Ref" : "AmiId"},
+                 "KeyName" : {"Ref" : "KeyPairName"},
+				 "InstanceType" : {"Ref" : "InstanceType"},
+				 "IamInstanceProfile" : {"Ref" : "S3FullAccessInstanceProfile"},
+				 "Tags" : [
+				 {"Key" : "Name", "Value" : "MicroStrategy-webserver"},
+				 {"Key" : "Email", "Value" : "saiastyabhargav.pothula@quantiphi.com"},
+				 {"Key" : "Project", "Value" : "LM"}, 
+				 {"Key" : "username", "Value" : "bhargavpss"}
+
+
+				],
+				"BlockDeviceMappings" : [
+		               {
+		                  "DeviceName" : "/dev/sda1",
+		                  "Ebs" : {
+		                     "VolumeType" : "gp2",
+		                     "DeleteOnTermination" : "true",
+		                     "VolumeSize" : "50"
+		                  }
+		               }
+		              
+                 ],
+				 
+				 "UserData" : {
+					"Fn::Base64" : {
+						"Fn::Join" : ["",
+							[
+								"#!/bin/bash \n",
+								"exec &> /var/log/userdata.log \n",
+								"install --directory --mode=0755 --owner=root --group=root /etc/profile.d \n",
+								"yum update -y \n",
+								"yum -y install ruby \n",
+								"yum -y install wget \n",
+								"wget https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install -P /home/ec2-user/ \n",
+								"chmod +x /home/ec2-user/install \n",
+								"/home/ec2-user/install auto \n",
+								"service codedeploy-agent status \n",
+								"service codedeploy-agent start \n"
+							
+                               
+							]
+						]
+					}
+				}
+				
+			}
+	},
+	"Iserver" : {
+			"Type" : "AWS::EC2::Instance",
+			"Properties" : {
+				 "ImageId" : {"Ref" : "AmiId"},
+                 "KeyName" : {"Ref" : "KeyPairName"},
+				 "InstanceType" : {"Ref" : "InstanceType"},
+				 "IamInstanceProfile" : {"Ref" : "S3FullAccessInstanceProfile"},
+				 "Tags" : [{"Key" : "Name", "Value" : "MicroStrategy-iserver"},
+				 {"Key" : "Email", "Value" : "saiastyabhargav.pothula@quantiphi.com"},
+				 {"Key" : "Project", "Value" : "LM"},
+				 {"Key" : "username", "Value" : "bhargavpss"}
+
+
+				],
+				"BlockDeviceMappings" : [
+		               {
+		                  "DeviceName" : "/dev/sda1",
+		                  "Ebs" : {
+		                     "VolumeType" : "gp2",
+		                     "DeleteOnTermination" : "true",
+		                     "VolumeSize" : "50"
+		                  }
+		               }
+		              
+                 ],
+				 
+				 "UserData" : {
+					"Fn::Base64" : {
+						"Fn::Join" : ["",
+							[
+								"#!/bin/bash \n",
+								"exec &> /var/log/userdata.log \n",
+								"install --directory --mode=0755 --owner=root --group=root /etc/profile.d \n",						
+								"yum update -y \n",
+								"yum -y install ruby \n",
+								"yum -y install wget \n",
+								"wget https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install -P /home/ec2-user/ \n",
+								"chmod +x /home/ec2-user/install \n",
+								"/home/ec2-user/install auto \n",
+								"service codedeploy-agent status \n",
+								"service codedeploy-agent start \n"
+							
+							]
+						]
+					}
+				}
+				
+			}
+      
+	},
+
+
+    "ElasticLoadBalancer" : {
+			"Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+			"Properties" : {
+			"AvailabilityZones" : { "Fn::GetAZs" : "" },
+			"Instances" : [ { "Ref" : "Webserver" } ],
+			"Listeners" : [{
+						"LoadBalancerPort" : "443",
+						"InstancePort" : "8080",
+						"SSLCertificateId" :{
+							"Ref" : "SSLcert"
+					    },
+						"Protocol" : "HTTPS"
+				}],
+              "HealthCheck" : {
+					"Target" : "HTTP:8080/",
+					"HealthyThreshold" : "3",
+					"UnhealthyThreshold" : "5",
+					"Interval" : "30",
+					"Timeout" : "5"
+				},
+				"ConnectionDrainingPolicy" : {
+					"Enabled" : "true",
+					"Timeout" : "300"
+				},
+				"ConnectionSettings" : {
+					"IdleTimeout" : "3600"
+				},
+				"Tags" : [{"Key" : "Name", "Value" : "ELB-webserver"},
+				 {"Key" : "Email", "Value" : "saiastyabhargav.pothula@quantiphi.com"},
+				 {"Key" : "Project", "Value" : "LM-CI"},
+				 {"Key" : "username", "Value" : "bhargavpss"}]
+
+            }
+     },
+     "S3FullAccessRole": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "AssumeRolePolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Principal": {
+                     "Service": [ "ec2.amazonaws.com" ]
+                  },
+                  "Action": [ "sts:AssumeRole" ]
+               } ]
+            },
+            "Path": "/",
+            "Policies": [ {
+               "PolicyName": "s3access",
+               "PolicyDocument": {
+                  "Version" : "2012-10-17",
+                  "Statement": [ {
+                     "Effect": "Allow",
+                     "Action" : "s3:*",
+                     "Resource": "*"
+                  } ]
+               }
+               } ]
+            }
+      }
+      
+
+	 
+    },
+   "Outputs" : {
+	"NameOfStack" : { 
+		"Value" : { 
+			"Ref" : "AWS::StackName" 
+		}
+	}
+  }
+}
