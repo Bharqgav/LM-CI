@@ -1,0 +1,24 @@
+--- # testing playbook
+ - hosts: Test
+   remote_user: ec2-user
+   become: yes
+   become_method: sudo
+   connection: ssh
+   gather_facts : yes
+   vars:
+   - fileName: "{{ shellFile }}"
+   tasks:
+   - name : copyfile sh file
+     copy:
+       src: "{{ fileName }}"
+       dest: /home/ec2-user/test/
+   - name: Execute the script
+     command: sh "{{ fileName }}"
+     register: output
+   - name: log output
+     debug: var=output
+   - local_action: copy content={{ output }} dest=/home/ec2-user/data2.json
+#   - local_action: command python /home/ansible/scrap_data_from_json.py /home/ansible/data2.json stdout
+#     register: output
+#   - debug: var=output
+
