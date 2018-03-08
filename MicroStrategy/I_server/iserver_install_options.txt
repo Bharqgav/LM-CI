@@ -1,7 +1,7 @@
 licenseAgreement.accept=true
-userRegistration.user=Pratap.Chilamakuri@LibertyMutual.com
+userRegistration.user=<REGISTRATION_USER>
 userRegistration.company=LM
-userRegistration.cdKey=WkhqzFd976wW232x8BWF8bBw9wpm4kfw5kmm34kmm8wpm4kfbBfffnm4kmmfw5cx4z52bz5
+userRegistration.cdKey=<REGISTRATION-KEY>
 install.Instance=new
 install.Operation=FRESH_INSTALL
 suite.homeDirectory=/var/opt/MicroStrategy
